@@ -62,19 +62,84 @@ CREATE TABLE componente(
 );
 
 drop table pilot;
-insert into campionat values (1, 'Formula 1', 'www.formula1.com', 5.99);
+----CAMPIONAT
+insert into campionat values (1, 'Formula 1', 'www.formula1.com', 9.99);
 insert into campionat values (2, 'Formula 2', 'www.formula2.com', 2.99);
+insert into campionat values (3, 'Formula 3', 'www.formula3.com', 1.99);
+insert into campionat values (4, 'Formula E', 'www.formulae.com', 4.99);
+insert into campionat values (5, '24 Hours of Le Mans', 'www.lemans.com', 5.99);
+-----------
+
+-----ECHIPA
 insert into echipa values(30, 'Scuderia Ferrari', 200000.85, 16, 1);
-insert into echipa values(31, 'Scuderia Ferrari2', 200000.85, 16, 2);
+insert into echipa values(31, 'Red Bull Racing', 150000, 4, 1);
+insert into echipa values(32, 'Mercedes AMG Petronas', 190000, 7, 1);
+insert into echipa values(40, 'Prema Racing', 50000, 1, 2);
+insert into echipa values(60, 'Techeetah', 70000, 2, 4);
+-------------
+
+------PILOT
 insert into pilot values(5, 'Sebastian', 'Vettel', 'seb5@gmail.com', 100000.85, TO_DATE('2015/05/03', 'yyyy/mm/dd'),
                             5, 53, 121, 30);
-insert into etapa values(1, 'Italian GP', TO_DATE('2019/09/08', 'yyyy/mm/dd'), 1);
+insert into pilot values(16, 'Charles', 'Leclerc', 'leclerc1@sf.com', 20000, TO_DATE('11/09/2018', 'dd/mm/yyyy'), 
+                            3, 2, 12, 30);
+insert into pilot values(44, 'Lewis', 'Hamilton', 'hamilton@yahoo.com', 50000, TO_DATE('07/10/2013', 'dd/mm/yyyy'),
+                            1, 95, 165, 32);
+insert into pilot values(33, 'Max', 'Verstappen', 'max@gmail.com', 25000, TO_DATE('04/09/2016', 'dd/mm/yyyy'),
+                            3, 10, 42, 31);
+insert into pilot values(13, 'Antonio', 'Da Costa', 'anto@yahoo.com', 10000, TO_DATE('11/08/2018', 'dd/mm/yyyy'),
+                            2, 1, 4, 60);
+------------
+
+-------ETAPA
+insert into etapa values(1, 'Italian GP', TO_DATE('06/09/2020', 'dd/mm/yyyy'), 1);
+insert into etapa values(2, 'Hungarian GP', TO_DATE('19/06/2020', 'dd/mm/yyyy'), 1);
+insert into etapa values(3, 'Belgian GP', TO_DATE('30/08/2020', 'dd/mm/yyyy'), 1);
+insert into etapa values(11, 'Bahrain2 GP', TO_DATE('29/11/2020', 'dd/mm/yyyy'), 2);
+insert into etapa values(41, 'Antofagasta Santiago E-Prix', TO_DATE('16/01/2021', 'dd/mm/yyyy'), 4);
+------------
+
+----CONCUREAZA_LA 
 insert into concureaza_la values(5, 1);
+insert into concureaza_la values(16, 1);
+insert into concureaza_la values(44, 1);
+insert into concureaza_la values(33, 1);
+insert into concureaza_la values(5, 2);
+insert into concureaza_la values(16, 2);
+insert into concureaza_la values(44, 2);
+insert into concureaza_la values(33, 2);
+insert into concureaza_la values(13, 41);
+insert into concureaza_la values(5, 3);
+insert into concureaza_la values(16, 3);
+insert into concureaza_la values(33, 3);
+-------------
+
+----------ORAS
 insert into oras values(1, 'Maranello');
+insert into oras values(2, 'Brackley');
+insert into oras values(3, 'Milton Keys');
+insert into oras values(4, 'Grisignano di Zocco');
+insert into oras values(5, 'Shanghai');
+-------------
+
+--------LOCATIE
 insert into locatie values(10, 'Ferrari Factory', 'Via Abetone Inferiore', 1);
+insert into locatie values(11, 'Red Bull Racing Factory', 'Bradbourne Dr MK7 8BJ', 3);
+insert into locatie values(12, 'Mercedes AMG Petronas Factory', 'Operations Centre NN13 7BD', 2);
+insert into locatie values(13, 'Prema Racing Factory', 'Via Alcide de Gasperi', 4);
+insert into locatie values(14, 'Techeetah Factory', 'Jiajin Expy', 5);
+---------------
+
+------COMPONENTE
 insert into componente values(10, 'Motor Ferrari', 9999999, 30, 10);
-select * from componente;
-delete from componente where id_comp = 10;
+insert into componente values(20, 'Transmisie RB', 100000, 31, 11);
+insert into componente values(30, 'Sistem Suspensie MAMG', 400000, 32, 12);
+insert into componente values(11, 'Frane SF2000', 80000, 30, 10);
+insert into componente values(21, 'Motor RB', 8000000, 31, 11);
+----------------
+
+update campionat set pret_abonament = 9.99 where id_campionat = 1;
+delete from locatie where id_locatie = 11;
 select nume_campionat
 from campionat c, echipa e
 where c.id_campionat = e.id_campionat and e.nume_echipa = 'Scuderia Ferrari';
