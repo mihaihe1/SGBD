@@ -76,6 +76,8 @@ insert into echipa values(31, 'Red Bull Racing', 150000, 4, 1);
 insert into echipa values(32, 'Mercedes AMG Petronas', 190000, 7, 1);
 insert into echipa values(40, 'Prema Racing', 50000, 1, 2);
 insert into echipa values(60, 'Techeetah', 70000, 2, 4);
+insert into echipa values(41, 'Uni-Virtuosi Racing', 40000, 0, 2);
+insert into echipa values(33, 'Test', 100000, 1, 1);
 -------------
 
 ------PILOT
@@ -147,4 +149,63 @@ where c.id_campionat = e.id_campionat and e.nume_echipa = 'Scuderia Ferrari';
 select nume_campionat
 from campionat c join echipa e on c.id_campionat = e.id_campionat
                 join pilot p on e.id_echipa = p.id_echipa;
-                
+
+select * from echipa;
+
+--6--
+--Pentru campionatul cu cele mai putine echipe(!=0), inserati o noua echipa cu bugetul 10000 si id 100 si stergeti echipa cu cel mai mic buget din campionatul
+-- cu cele mai multe echipe. Afisati modificarile.
+
+create or replace procedure ex6
+    is
+        type camp is table of campionat.id_campionat%TYPE INDEX BY PLS_INTEGER;
+        lista camp;   
+        min_buget echipa.buget%type;
+        min_cnt number:=10;
+        max_cnt number:=0;
+        cnt number;
+        id_min_camp campionat.id_campionat%type;
+        id_max_camp campionat.id_campionat%type;
+        id_e echipa.id_echipa%type;
+        
+    begin
+        select id_campionat
+        bulk collect into lista
+        from campionat;
+        
+        for i in 1..lista.count loop
+            select count(*) into cnt
+            from echipa
+            where id_campionat = lista(i);
+            
+            if cnt < min_cnt and cnt != 0 then
+                min_cnt := cnt;
+                id_min_camp := lista(i);
+            end if;
+
+            if cnt > max_cnt then
+                max_cnt := cnt;
+                id_max_camp := lista(i);
+                select min(buget) into min_buget
+                from echipa
+                where id_campionat = lista(i);
+            end if;
+        end loop;
+        
+        insert into echipa values(100, 'EX6 RACING', 10000, 0, id_min_camp);
+        dbms_output.put_line('A fost inserata echipa in campionatul cu id ' || id_min_camp);
+        
+        select id_echipa into id_e
+        from echipa
+        where id_campionat = id_max_camp and buget = min_buget;
+        
+        --delete from echipa where id_echipa = id_e;
+        dbms_output.put_line('A fost stearsa echipa cu id-ul ' || id_e);
+        
+end ex6;
+
+begin
+    ex6;
+end;
+select * from echipa;
+delete from echipa where id_echipa = 100;
