@@ -199,7 +199,7 @@ create or replace procedure ex6
         from echipa
         where id_campionat = id_max_camp and buget = min_buget;
         
-        --delete from echipa where id_echipa = id_e;
+        delete from echipa where id_echipa = id_e;
         dbms_output.put_line('A fost stearsa echipa cu id-ul ' || id_e);
         
 end ex6;
