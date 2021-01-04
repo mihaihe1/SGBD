@@ -41,27 +41,21 @@ CREATE TABLE concureaza_la(
     UNIQUE (id_pilot, id_etapa)
 );
 
-CREATE TABLE oras(
-    id_oras number(3) PRIMARY KEY,
-    nume_oras varchar2(40)
-);
-
-CREATE TABLE locatie(
-    id_locatie number(3) PRIMARY KEY,
-    nume_locatie varchar2(40),
-    strada varchar2(40),
-    id_oras number(3) references oras(id_oras)
+CREATE TABLE fabrica(
+    id_fabrica number(3) PRIMARY KEY,
+    nume_fabrica varchar2(40),
+    adresa varchar2(40),
+    id_echipa number(3) references echipa(id_echipa) on delete cascade
 );
 
 CREATE TABLE componente(
     id_comp number(4) PRIMARY KEY,
     nume_comp varchar2(30),
     pret_prod number(10, 3),
-    id_echipa number(3) references echipa(id_echipa),
-    id_locatie number(3) references locatie(id_locatie)
+    id_fabrica number(3) references fabrica(id_fabrica)
 );
 
-drop table pilot;
+drop table componente;
 ----CAMPIONAT
 insert into campionat values (1, 'Formula 1', 'www.formula1.com', 9.99);
 insert into campionat values (2, 'Formula 2', 'www.formula2.com', 2.99);
@@ -116,28 +110,21 @@ insert into concureaza_la values(16, 3);
 insert into concureaza_la values(33, 3);
 -------------
 
-----------ORAS
-insert into oras values(1, 'Maranello');
-insert into oras values(2, 'Brackley');
-insert into oras values(3, 'Milton Keys');
-insert into oras values(4, 'Grisignano di Zocco');
-insert into oras values(5, 'Shanghai');
--------------
-
---------LOCATIE
-insert into locatie values(10, 'Ferrari Factory', 'Via Abetone Inferiore', 1);
-insert into locatie values(11, 'Red Bull Racing Factory', 'Bradbourne Dr MK7 8BJ', 3);
-insert into locatie values(12, 'Mercedes AMG Petronas Factory', 'Operations Centre NN13 7BD', 2);
-insert into locatie values(13, 'Prema Racing Factory', 'Via Alcide de Gasperi', 4);
-insert into locatie values(14, 'Techeetah Factory', 'Jiajin Expy', 5);
+--------FABRICA
+insert into fabrica values(10, 'Ferrari Factory', 'Via Abetone Inferiore', 30);
+insert into fabrica values(11, 'Red Bull Racing Factory', 'Bradbourne Dr MK7 8BJ', 31);
+insert into fabrica values(12, 'Mercedes AMG Petronas Factory', 'Operations Centre NN13 7BD', 32);
+insert into fabrica values(13, 'Prema Racing Factory', 'Via Alcide de Gasperi', 40);
+insert into fabrica values(14, 'Techeetah Factory', 'Jiajin Expy', 60);
+select * from componente;
 ---------------
 
 ------COMPONENTE
-insert into componente values(10, 'Motor Ferrari', 9999999, 30, 10);
-insert into componente values(20, 'Transmisie RB', 100000, 31, 11);
-insert into componente values(30, 'Sistem Suspensie MAMG', 400000, 32, 12);
-insert into componente values(11, 'Frane SF2000', 80000, 30, 10);
-insert into componente values(21, 'Motor RB', 8000000, 31, 11);
+insert into componente values(10, 'Motor Ferrari', 9999999, 10);
+insert into componente values(20, 'Transmisie RB', 100000, 11);
+insert into componente values(30, 'Sistem Suspensie MAMG', 400000, 12);
+insert into componente values(11, 'Frane SF2000', 80000, 10);
+insert into componente values(21, 'Motor RB', 8000000, 11);
 ----------------
 
 update campionat set pret_abonament = 9.99 where id_campionat = 1;
@@ -150,7 +137,7 @@ select nume_campionat
 from campionat c join echipa e on c.id_campionat = e.id_campionat
                 join pilot p on e.id_echipa = p.id_echipa;
 
-select * from echipa;
+select * from componente;
 
 --6--
 --Pentru campionatul cu cele mai putine echipe(!=0), inserati o noua echipa cu bugetul 10000 si id 100 si stergeti echipa cu cel mai mic buget din campionatul
@@ -207,5 +194,179 @@ end ex6;
 begin
     ex6;
 end;
+
+----------------------------------------------------
+
+--7--
+create or replace procedure ex7
+    is
+        cursor c is 
+            select id_fabrica, nume_fabrica
+            from fabrica;
+        
+        cursor d(param number) is
+            select pret_prod
+            from componente
+            where id_fabrica = param;
+        suma number;
+    begin
+        for i in c loop
+            DBMS_OUTPUT.PUT_LINE('-------------------------------------');
+            DBMS_OUTPUT.PUT_LINE ('FABRICA: '|| i.nume_fabrica);
+            suma := 0;
+            for k in d(i.id_fabrica) loop
+                suma := suma+k.pret_prod;
+            end loop;
+            DBMS_OUTPUT.PUT_LINE ('PRET TOTAL: '|| suma);
+            DBMS_OUTPUT.PUT_LINE('-------------------------------------');
+        end loop;
+        
+end ex7;
+
+begin
+    ex7;
+end;
+
+-----------------------------------
+
+--8--
+--Pentru un pilot dat ca parametru sa se returneze numarul victoriilor al tuturor pilotilor din campionatul in care concureaza.(+exceptii)
+
+create or replace function ex8(v_last_name pilot.last_name%type) return number
+    is
+        type echipe is table of echipa.id_echipa%TYPE INDEX BY PLS_INTEGER;
+        lista echipe;     
+        id_e pilot.id_echipa%type;
+        nume campionat.nume_campionat%type;
+        total number := 0;
+        id_camp campionat.id_campionat%type;
+        ok number;
+    begin
+        select id_echipa into id_e
+        from pilot
+        where last_name = v_last_name;
+        
+        select c.id_campionat into id_camp
+        from echipa e join campionat c on e.id_campionat = c.id_campionat
+        where e.id_echipa = id_e;
+        
+        select id_echipa 
+        bulk collect into lista
+        from echipa
+        where id_campionat = id_camp;
+        
+        for i in (select id_echipa, victorii 
+                    from pilot) loop
+            ok := 0;
+            for j in 1..lista.count loop
+                if i.id_echipa = lista(j) then
+                    ok := 1;
+                end if;
+                exit when ok = 1;
+            end loop;
+            if ok = 1 then
+                total := total + i.victorii;
+            end if;
+        end loop; 
+        
+        return total;         
+        
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN 
+            DBMS_OUTPUT.PUT_LINE ('Nu exista pilot cu acest nume');
+            return -1;
+            
+            WHEN TOO_MANY_ROWS THEN
+            DBMS_OUTPUT.PUT_LINE ('Exista mai multi piloti cu acest nume');
+            return -2;
+        
+        
+end;
+
+begin
+    DBMS_OUTPUT.PUT_LINE (ex8('Vettel'));
+end;
+
 select * from echipa;
 delete from echipa where id_echipa = 100;
+
+--------------------------------------------------
+--Pentru un nume dat de etapa, sa se transfere pilotul cu cel mai mic salariu care a concurat la etapa, la echipa cu cele mai multe titluri castigate cu un salariu dublu,
+--(bugetul echipei va fi scazut cu noul salariu), iar pentru echipa care a pierdut pilotul sa se construiasca o noua fabrica cu jumatate din banii repartizati fostului pilot
+--9--
+create or replace procedure ex9(v_nume_etapa etapa.nume_etapa%type)
+    is
+        id_et etapa.id_etapa%type;
+        type piloti is table of pilot.id_pilot%TYPE INDEX BY PLS_INTEGER;
+        lista piloti;
+        min1 number:= 999999;
+        minteam echipa.id_echipa%type;
+        id_pilot_min pilot.id_pilot%type;
+        id_echipa_min pilot.id_echipa%type;
+        id_echipa_max pilot.id_echipa%type;
+        titles echipa.titluri_castigate%type;
+        sal pilot.salary%type;
+        team echipa.id_echipa%type;
+    begin
+    
+    select id_etapa into id_et
+    from etapa
+    where nume_etapa = v_nume_etapa;
+    
+    select id_pilot
+    bulk collect into lista
+    from concureaza_la
+    where id_etapa = id_et;
+    
+    for i in 1..lista.count loop
+        select salary, id_echipa into sal, team
+        from pilot
+        where id_pilot = lista(i);
+        
+        if sal < min1 then
+            min1 := sal;
+            minteam := team;
+            id_pilot_min := lista(i);
+        end if;
+    end loop;
+    
+    select id_echipa, titluri_castigate into id_echipa_max, titles
+    from echipa
+    where titluri_castigate in (select max(titluri_castigate)
+                                from echipa);
+                            
+    update pilot set id_echipa = id_echipa_max,
+                     salary = salary * 2,
+                     hire_date = SYSDATE,
+                     contract = 1
+                where id_pilot = id_pilot_min;
+    
+    select salary into sal
+    from pilot 
+    where id_pilot = id_pilot_min;
+    
+    update echipa set buget = buget - sal where id_echipa = id_echipa_max;
+    
+    insert into fabrica values(new_factory.nextval, 'New Factory', 'New Street', minteam);
+    
+    update echipa set buget = buget + sal/4 where id_echipa = minteam;
+   
+    EXCEPTION 
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('Nu exista etapa cu acest nume');
+end ex9;
+
+begin
+    ex9('Italian GP');
+end;
+
+CREATE SEQUENCE new_factory START WITH 50;
+
+select c.id_pilot
+from pilot p join concureaza_la c on p.id_pilot = c.id_pilot
+where c.id_etapa = 1;
+delete from echipa where id_echipa = 100;
+
+select * from pilot;
+rollback;
+update pilot set id_echipa=31 where id_pilot = 33;
