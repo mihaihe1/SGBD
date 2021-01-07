@@ -25,20 +25,25 @@ CREATE TABLE pilot(
     podiumuri number(4),
     id_echipa number(3) REFERENCES echipa(id_echipa) on delete cascade
 );
-
-CREATE TABLE etapa(
-    id_etapa number(3) PRIMARY KEY,
-    nume_etapa varchar2(50),
-    data_etapa date,
-    id_campionat number(3) references campionat(id_campionat) on delete cascade
+drop table tara;
+CREATE TABLE circuit(
+    id_circuit number(3) PRIMARY KEY,
+    nume_circuit varchar2(50),
+    nr_spectatori number(6),
+    id_tara number(3) references tara(id_tara) on delete cascade
 );
 
-CREATE TABLE concureaza_la(
+create table tara(
+    id_tara number(3) primary key,
+    nume_tara varchar2(50)
+);
+
+CREATE TABLE testeaza_la(
     id_pilot number(4) NOT NULL,
-    id_etapa number(3) NOT NULL,
+    id_circuit number(3) NOT NULL,
     FOREIGN KEY (id_pilot) references pilot(id_pilot),
-    FOREIGN KEY (id_etapa) references etapa(id_etapa),
-    UNIQUE (id_pilot, id_etapa)
+    FOREIGN KEY (id_circuit) references circuit(id_circuit),
+    UNIQUE (id_pilot, id_circuit)
 );
 
 CREATE TABLE fabrica(
@@ -65,7 +70,7 @@ insert into campionat values (5, '24 Hours of Le Mans', 'www.lemans.com', 5.99);
 -----------
 
 -----ECHIPA
-insert into echipa values(30, 'Scuderia Ferrari', 200000.85, 16, 1);
+insert into echipa values(30, 'Scuderia Ferrari', 60000, 16, 1);
 insert into echipa values(31, 'Red Bull Racing', 150000, 4, 1);
 insert into echipa values(32, 'Mercedes AMG Petronas', 190000, 7, 1);
 insert into echipa values(40, 'Prema Racing', 50000, 1, 2);
@@ -87,27 +92,35 @@ insert into pilot values(13, 'Antonio', 'Da Costa', 'anto@yahoo.com', 10000, TO_
                             2, 1, 4, 60);
 ------------
 
--------ETAPA
-insert into etapa values(1, 'Italian GP', TO_DATE('06/09/2020', 'dd/mm/yyyy'), 1);
-insert into etapa values(2, 'Hungarian GP', TO_DATE('19/06/2020', 'dd/mm/yyyy'), 1);
-insert into etapa values(3, 'Belgian GP', TO_DATE('30/08/2020', 'dd/mm/yyyy'), 1);
-insert into etapa values(11, 'Bahrain2 GP', TO_DATE('29/11/2020', 'dd/mm/yyyy'), 2);
-insert into etapa values(41, 'Antofagasta Santiago E-Prix', TO_DATE('16/01/2021', 'dd/mm/yyyy'), 4);
+-------CIRCUIT
+insert into circuit values(1, 'Autodromo Monza', 10000,10);
+insert into circuit values(2, 'Hungaroring', 8000,11);
+insert into circuit values(3, 'Spa-Francorchamps', 15000,12);
+insert into circuit values(4, 'Park Zandvoort', 5000,13);
+insert into circuit values(5, 'Mugello', 2000,10);
 ------------
 
-----CONCUREAZA_LA 
-insert into concureaza_la values(5, 1);
-insert into concureaza_la values(16, 1);
-insert into concureaza_la values(44, 1);
-insert into concureaza_la values(33, 1);
-insert into concureaza_la values(5, 2);
-insert into concureaza_la values(16, 2);
-insert into concureaza_la values(44, 2);
-insert into concureaza_la values(33, 2);
-insert into concureaza_la values(13, 41);
-insert into concureaza_la values(5, 3);
-insert into concureaza_la values(16, 3);
-insert into concureaza_la values(33, 3);
+--------TARA
+insert into tara values(10, 'Italia');
+insert into tara values(11, 'Ungaria');
+insert into tara values(12, 'Belgia');
+insert into tara values(13, 'Olanda');
+insert into tara values(14, 'Turcia');
+------------
+
+----TESTEAZA_LA 
+insert into testeaza_la values(5, 1);
+insert into testeaza_la values(16, 1);
+insert into testeaza_la values(44, 1);
+insert into testeaza_la values(33, 1);
+insert into testeaza_la values(5, 2);
+insert into testeaza_la values(16, 2);
+insert into testeaza_la values(44, 2);
+insert into testeaza_la values(33, 2);
+insert into testeaza_la values(13, 4);
+insert into testeaza_la values(5, 3);
+insert into testeaza_la values(16, 3);
+insert into testeaza_la values(33, 3);
 -------------
 
 --------FABRICA
@@ -137,229 +150,81 @@ select nume_campionat
 from campionat c join echipa e on c.id_campionat = e.id_campionat
                 join pilot p on e.id_echipa = p.id_echipa;
 
-select * from componente;
+select * from fabrica;
 
---6--
---Pentru campionatul cu cele mai putine echipe(!=0), inserati o noua echipa cu bugetul 10000 si id 100 si stergeti echipa cu cel mai mic buget din campionatul
--- cu cele mai multe echipe. Afisati modificarile.
+select count(*), id_echipa
+from pilot
+group by id_echipa;
 
-create or replace procedure ex6
-    is
-        type camp is table of campionat.id_campionat%TYPE INDEX BY PLS_INTEGER;
-        lista camp;   
-        min_buget echipa.buget%type;
-        min_cnt number:=10;
-        max_cnt number:=0;
-        cnt number;
-        id_min_camp campionat.id_campionat%type;
-        id_max_camp campionat.id_campionat%type;
-        id_e echipa.id_echipa%type;
-        
-    begin
-        select id_campionat
-        bulk collect into lista
-        from campionat;
-        
-        for i in 1..lista.count loop
-            select count(*) into cnt
-            from echipa
-            where id_campionat = lista(i);
-            
-            if cnt < min_cnt and cnt != 0 then
-                min_cnt := cnt;
-                id_min_camp := lista(i);
-            end if;
+create table info_user
+    (utilizator VARCHAR2(30),
+     nume_bd VARCHAR2(30),
+     eveniment VARCHAR2(20),
+     nume_obiect VARCHAR2(30),
+     data DATE);
 
-            if cnt > max_cnt then
-                max_cnt := cnt;
-                id_max_camp := lista(i);
-                select min(buget) into min_buget
-                from echipa
-                where id_campionat = lista(i);
-            end if;
-        end loop;
-        
-        insert into echipa values(100, 'EX6 RACING', 10000, 0, id_min_camp);
-        dbms_output.put_line('A fost inserata echipa in campionatul cu id ' || id_min_camp);
-        
-        select id_echipa into id_e
-        from echipa
-        where id_campionat = id_max_camp and buget = min_buget;
-        
-        delete from echipa where id_echipa = id_e;
-        dbms_output.put_line('A fost stearsa echipa cu id-ul ' || id_e);
-        
-end ex6;
 
+
+create or replace trigger ex12
+    after create or drop or alter on schema
 begin
-    ex6;
+    insert into info_user values(sys.login_user, sys.database_name,
+    sys.sysevent, sys.dictionary_obj_name, sysdate);
 end;
 
-----------------------------------------------------
+select 
+to_char(to_date('01-JAN-12','dd-mon-yy'),'mm') from dual;
 
---7--
-create or replace procedure ex7
-    is
-        cursor c is 
-            select id_fabrica, nume_fabrica
-            from fabrica;
-        
-        cursor d(param number) is
-            select pret_prod
-            from componente
-            where id_fabrica = param;
-        suma number;
-    begin
-        for i in c loop
-            DBMS_OUTPUT.PUT_LINE('-------------------------------------');
-            DBMS_OUTPUT.PUT_LINE ('FABRICA: '|| i.nume_fabrica);
-            suma := 0;
-            for k in d(i.id_fabrica) loop
-                suma := suma+k.pret_prod;
-            end loop;
-            DBMS_OUTPUT.PUT_LINE ('PRET TOTAL: '|| suma);
-            DBMS_OUTPUT.PUT_LINE('-------------------------------------');
-        end loop;
-        
-end ex7;
-
+create or replace trigger ex10
+    before insert or update or delete on pilot
 begin
-    ex7;
-end;
-
------------------------------------
-
---8--
---Pentru un pilot dat ca parametru sa se returneze numarul victoriilor al tuturor pilotilor din campionatul in care concureaza.(+exceptii)
-
-create or replace function ex8(v_last_name pilot.last_name%type) return number
-    is
-        type echipe is table of echipa.id_echipa%TYPE INDEX BY PLS_INTEGER;
-        lista echipe;     
-        id_e pilot.id_echipa%type;
-        nume campionat.nume_campionat%type;
-        total number := 0;
-        id_camp campionat.id_campionat%type;
-        ok number;
-    begin
-        select id_echipa into id_e
-        from pilot
-        where last_name = v_last_name;
-        
-        select c.id_campionat into id_camp
-        from echipa e join campionat c on e.id_campionat = c.id_campionat
-        where e.id_echipa = id_e;
-        
-        select id_echipa 
-        bulk collect into lista
-        from echipa
-        where id_campionat = id_camp;
-        
-        for i in (select id_echipa, victorii 
-                    from pilot) loop
-            ok := 0;
-            for j in 1..lista.count loop
-                if i.id_echipa = lista(j) then
-                    ok := 1;
-                end if;
-                exit when ok = 1;
-            end loop;
-            if ok = 1 then
-                total := total + i.victorii;
-            end if;
-        end loop; 
-        
-        return total;         
-        
-        EXCEPTION
-            WHEN NO_DATA_FOUND THEN 
-            DBMS_OUTPUT.PUT_LINE ('Nu exista pilot cu acest nume');
-            return -1;
-            
-            WHEN TOO_MANY_ROWS THEN
-            DBMS_OUTPUT.PUT_LINE ('Exista mai multi piloti cu acest nume');
-            return -2;
-        
-        
-end;
-
-begin
-    DBMS_OUTPUT.PUT_LINE (ex8('Vettel'));
-end;
-
-select * from echipa;
-delete from echipa where id_echipa = 100;
-
---------------------------------------------------
---Pentru un nume dat de etapa, sa se transfere pilotul cu cel mai mic salariu care a concurat la etapa, la echipa cu cele mai multe titluri castigate cu un salariu dublu,
---(bugetul echipei va fi scazut cu noul salariu), iar pentru echipa care a pierdut pilotul sa se construiasca o noua fabrica cu jumatate din banii repartizati fostului pilot
---9--
-create or replace procedure ex9(v_nume_etapa etapa.nume_etapa%type)
-    is
-        id_et etapa.id_etapa%type;
-        type piloti is table of pilot.id_pilot%TYPE INDEX BY PLS_INTEGER;
-        lista piloti;
-        min1 number:= 999999;
-        minteam echipa.id_echipa%type;
-        id_pilot_min pilot.id_pilot%type;
-        id_echipa_min pilot.id_echipa%type;
-        id_echipa_max pilot.id_echipa%type;
-        titles echipa.titluri_castigate%type;
-        sal pilot.salary%type;
-        team echipa.id_echipa%type;
-    begin
-    
-    select id_etapa into id_et
-    from etapa
-    where nume_etapa = v_nume_etapa;
-    
-    select id_pilot
-    bulk collect into lista
-    from concureaza_la
-    where id_etapa = id_et;
-    
-    for i in 1..lista.count loop
-        select salary, id_echipa into sal, team
-        from pilot
-        where id_pilot = lista(i);
-        
-        if sal < min1 then
-            min1 := sal;
-            minteam := team;
-            id_pilot_min := lista(i);
+    if to_char(sysdate,'mm') > 3 and to_char(sysdate,'mm') < 10 then
+        if inserting then
+            raise_application_error(-20000, 'Nu se pot insera piloti noi in timpul sezonului');
         end if;
-    end loop;
-    
-    select id_echipa, titluri_castigate into id_echipa_max, titles
-    from echipa
-    where titluri_castigate in (select max(titluri_castigate)
-                                from echipa);
-                            
-    update pilot set id_echipa = id_echipa_max,
-                     salary = salary * 2,
-                     hire_date = SYSDATE,
-                     contract = 1
-                where id_pilot = id_pilot_min;
-    
-    select salary into sal
-    from pilot 
-    where id_pilot = id_pilot_min;
-    
-    update echipa set buget = buget - sal where id_echipa = id_echipa_max;
-    
-    insert into fabrica values(new_factory.nextval, 'New Factory', 'New Street', minteam);
-    
-    update echipa set buget = buget + sal/4 where id_echipa = minteam;
-   
-    EXCEPTION 
-        WHEN NO_DATA_FOUND THEN
-            DBMS_OUTPUT.PUT_LINE('Nu exista etapa cu acest nume');
-end ex9;
-
-begin
-    ex9('Italian GP');
+        
+        if updating then
+            raise_application_error(-20001, 'Nu se pot actualiza informatii despre piloti in timpul sezonului');
+        end if;
+        
+        if deleting then
+            raise_application_error(-20002, 'Nu se pot sterge piloti in timpul sezonului');
+        end if;
+    end if;
 end;
 
+create or replace trigger ex11
+    before insert or update on echipa
+    for each row
+declare
+    bug echipa.buget%type;
+    nc campionat.nume_campionat%type;
+begin
+    bug := :NEW.buget;
+    
+    select nume_campionat into nc
+    from campionat 
+    where id_campionat = :NEW.id_campionat;
+    
+    if nc = 'Formula 1' then
+        if bug < 50000 or bug > 300000 then
+            raise_application_error(-20003, 'Bugetul echipei nu se incadreaza in limitele impuse de Formula 1');
+        end if;
+    elsif nc = 'Formula 2' then
+        if bug < 10000 or bug > 50000 then
+            raise_application_error(-20004, 'Bugetul echipei nu se incadreaza in limitele impuse de Formula 2');
+        end if;
+    end if;
+    
+end;
+
+select 
+to_char(sysdate,'mm') from dual;
+ 
+insert into pilot values(6, 'Sebastian', 'Vettel', 'seb5@gmail.com', 100000.85, TO_DATE('2015/05/03', 'yyyy/mm/dd'),
+                            5, 53, 121, 30);rollback;
+                            drop trigger ex4;
+ 
 CREATE SEQUENCE new_factory START WITH 50;
 
 select c.id_pilot
@@ -367,6 +232,11 @@ from pilot p join concureaza_la c on p.id_pilot = c.id_pilot
 where c.id_etapa = 1;
 delete from echipa where id_echipa = 100;
 
-select * from pilot;
+select * from echipa;
 rollback;
 update pilot set id_echipa=31 where id_pilot = 33;
+select id_echipa, titluri_castigate
+from echipa
+where titluri_castigate in (select max(titluri_castigate)
+                            from echipa
+                            );
